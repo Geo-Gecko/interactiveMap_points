@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<link rel="shortcut icon" href="data/stork.svg">
+
+		<title>KCCA - UNICEF Interactive Map</title>
+
+		<link href='css_/L.css' rel='stylesheet'/>
+		<link rel="stylesheet" href="css_/font-awesome.css" />
+		<link rel="stylesheet" href="css_/MarkerCluster.Default.css" />
+		<link rel="stylesheet" href="css_/leaflet.css" />
+		<link rel="stylesheet" href="css_/easy-button.css" />
+		<link href='css_/icontext.css' rel='stylesheet'/>
+		<link href='css_/L.Control.Sidebar.css' rel='stylesheet'/>
+		<link rel="stylesheet" href="css_/leaflet-tag-filter-button.css" />
+		<link rel="stylesheet" href="css_/bootstrap.css" />
+		<link rel="stylesheet" href="css_/MarkerCluster.css" />   	
+
+
+		<style>
+			body {
+				overflow-y: hidden;
+				padding: 0;
+				margin: 0;
+			}
+
+			html,
+			body,
+			#map {
+				height: 100%;
+				width: 100%;
+			}
+		</style>
+		<script src="js_/d3.v3.min.js"></script>
+		<script type="text/javascript" src="js_/leaflet.js"></script>
+		<script type="text/javascript" src="js_/L.js"></script>
+		<script type="text/javascript" src="js_/L.Control.Sidebar.js"></script>
+		<script src="js_/RadarChart.js"></script>
+		<script src="js_/leaflet-easy-button.js"></script>
+		<script src="js_/leaflet-tag-filter-button.js"></script>
+		<script type="text/javascript" src="js_/leaflet.markercluster.js"></script>
+		<script src="js_/jquery-2.1.1.js"></script>
+		<script type="text/javascript" src="js_/bootstrap.js"></script>
+
+		<!--// styling of filter button-->
+		<style>
+			.leaflet-map {
+				height: 500px;
+				width: 100%;
+			}
+
+			.easy-button-button {
+				display: block !important;
+			}
+
+			.tag-filter-tags-container {
+				left: 30px;
+			}
+		</style>
+
+
+
+
+	</head>
+
+	<body>
+		<div id="map"> </div>
+
+		<div id="sidebar">
+			<h1>Spider Chart </h1>
+			<p><strong>Selected Parish: </strong><span id='parish'></span>
+				<br>
+				<strong>Selected SubCounty: </strong><span id='subCounty'></span></p>
+
+
+
+		</div>
+		<script>       
+
+			$.fn.center = function () {
+				this.css("position","absolute");
+				this.css("bottom", "-5em"
+						);
+				this.css("right", "0px"
+						);
+				return this;
+			}
+
+
+
+			var storkmap = {};
+
+
+
+			function formatMarkerInfo(node) {
+
+				var link = '<a href="http://www.openstreetmap.org/edit?editor=id&node=' + node.id +
+					'">Edit this entry in iD</a><br>';
+				//var user = '<b>Added by: </b>' + '<a href="http://www.openstreetmap.org/user/' + node.user + '">' + node.user + '</a><br>';
+				var timestamp = '<b>Timestamp: </b>' + node.timestamp;
+
+				var r = $('<table>');
+
+				for (var i in node.tags)
+					r.append($('<tr>').append($('<th>').text(i)).append($('<td>').text(node.tags[i])));
+
+				var tags = $('<div>').append(r).html();
+
+
+				var img = '<b>Foto: </b>' + '<a href="' + node.tags.image + '">' + "foto link" + '</a><br>';
+				if (node.tags.image == null) img = '';
+
+
+				return link + '<br>' /*+ user + timestamp + '<br>' + '<br>' */+ '<b>Tags:</b>' + '<br>' + tags + '<br>' +
+					img;
+			};
+
+			function makeMarkers() {
+				var markerCG = storkmap.markerClusterGroup;
+				var markerCG1 = storkmap.markerClusterGroup1;
+				var markerCG2 = storkmap.markerClusterGroup2;
+				var markerCG3 = storkmap.markerClusterGroup3;
+				var markerCG5 = storkmap.markerClusterGroup5;
+				var markerCG6 = storkmap.markerClusterGroup6;
+				var markerCG11 = storkmap.markerClusterGroup11;
+				markerCG.clearLayers();
+
+
+				var rightSidebar = L.control.sidebar('sidebar', {
+					position: 'right',
+					closeButton: true
+				});
+				storkmap.map.addControl(rightSidebar);
+				rightSidebar.toggle();
+				rightSidebar.on('click', function(){
+				});
+
+				$.getJSON('./json/HealthCentres.geojson', function(data){
+					L.geoJson(data, {
+						onEachFeature: function(feature, layer) {
+							markerCG.addLayer(layer);
+						},
+						pointToLayer: function (feature, latlng) {
+							var geojsonMarkerProperties = {
+								tags: [String(feature.properties.Grade)],
+							}
+							return L.marker(latlng, geojsonMarkerProperties)
+						}
+					});
+				});
+
+				$.getJSON('./json/Schools.geojson', function(data){
+					L.geoJson(data, {
+						onEachFeature: function(feature, layer) {
+							markerCG1.addLayer(layer);
+						},
+						pointToLayer: function (feature, latlng) {
+							var geojsonMarkerProperties = {
+								tags: [String(feature.properties.Ownership)],
+							}
+							return L.marker(latlng, geojsonMarkerProperties)
+						}
+					});
+				});
+				$.getJSON('./json/Police.geojson', function(data){
+					L.geoJson(data, {
+						onEachFeature: function(feature, layer) {
+							markerCG2.addLayer(layer);
+						},
+						pointToLayer: function (feature, latlng) {
+							var geojsonMarkerProperties = {
+								tags: [String(feature.properties.Type)],
+							}
+							return L.marker(latlng, geojsonMarkerProperties)
+						}
+					});
+				});
+
+
+
+			};
+
+			function queryOverpass() {
+				//var bbString = formatBBox(),
+				//overpassQuery = encodeURIComponent("node" + '[birds_nest=stork]' + bbString + ";out body;"),
+				overpassURL = './json/interpreter.json'
+
+				$.ajax({
+					url: overpassURL,
+					type: 'GET',
+					crossDomain: true,
+					success: function (data) {
+						storkmap.osmJson = data.elements;
+						makeMarkers();						
+					},
+				});
+			};
+
+			function onMapViewReset(e) {
+				queryOverpass();
+			};
+
+			function onMapMoveEnd(e) {
+				queryOverpass();
+			};
+
+			function makeMap() {
+
+				var map = storkmap.map;
+
+				storkmap.map.addLayer(storkmap.markerClusterGroup);
+
+				queryOverpass();
+
+
+				var buttons = {
+					Police: L.easyButton({
+						id: "policeButton",
+						position: 'bottomleft',
+						states: [{
+							stateName: 'add-markers',
+							icon: '<img alt="do this" src="data/shield.svg" height="30" width="15" align="left" style="opacity:0.2 "/><span id="text" class="btn--text"><font color="black"><b>Police</b></font></span>',
+							title: 'add random markers',
+							onClick: function(control) {
+								map.addLayer(storkmap.markerClusterGroup2);
+								control.state('remove-markers');
+							}
+						}, {
+							icon: '<img alt="do this" src="data/shield.svg" height="30" width="15" align="left" /><span id="text" class="btn--text"><font color="black"><b>Police</b></font></span>',
+							stateName: 'remove-markers',
+							onClick: function(control) {
+								map.removeLayer(storkmap.markerClusterGroup2);
+								control.state('add-markers');
+							},
+							title: 'remove markers'
+						}]
+					}),
+					Schools: L.easyButton({
+						id: "schoolButton",
+						position: 'bottomleft',
+						states: [{
+							stateName: 'add-markers',
+							icon: '<img alt="do this" src="data/school.svg" height="30" width="15" align="left" style="opacity:0.2 "/><span id="text" class="btn--text"><font color="black"><b>Schools</b></font></span>',
+							title: 'add random markers',
+							onClick: function(control) {
+								map.addLayer(storkmap.markerClusterGroup1);
+								control.state('remove-markers');
+							}
+						}, {
+							icon: '<img alt="do this" src="data/school.svg" height="30" width="15" align="left" /><span id="text" class="btn--text"><font color="black"><b>Schools</b></font></span>',
+							stateName: 'remove-markers',
+							onClick: function(control) {
+								map.removeLayer(storkmap.markerClusterGroup1);
+								control.state('add-markers');
+							},
+							title: 'remove markers'
+						}]
+					}),
+					HealthCare: L.easyButton({
+						id: "healthButton",
+						position: 'bottomleft',
+						states: [{
+							icon: '<img alt="do this" src="data/plus.svg" height="30" width="15" align="left"/><span id="text" class="btn--text"><font color="black"><b>Health Care</b></font></span>',
+							stateName: 'remove-markers',
+							onClick: function(control) {
+								map.removeLayer(storkmap.markerClusterGroup);
+								control.state('add-markers');
+							},
+							title: 'remove markers'
+						},
+								 {
+									 stateName: 'add-markers',
+									 icon: '<img alt="do this" src="data/plus.svg" height="30" width="15" align="left" style="opacity:0.2 "/><span id="text" class="btn--text"><font color="black"><b>Health Care</b></font></span>',
+									 title: 'add random markers',
+									 onClick: function(control) {	
+										 map.addLayer(storkmap.markerClusterGroup);
+										 control.state('remove-markers');
+									 }
+								 }]
+					})
+				}
+
+				// add the buttons. iterates over the buttons objects
+				for (var key in buttons) {
+					if (buttons.hasOwnProperty(key)) {
+						buttons[key].addTo(map);
+					}
+				}
+
+				map.setView([0.3193, 32.5953], 12);
+
+
+			};
+
+			var attr_osm = '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+			var attr_nests = 'data via <a href="http://www.overpass-api.de/" target=”_blank”>Overpass API</a>';
+			var attr_dev = 'web map funded by <a href="https://www.giz.de/en/worldwide/310.html" target=”_blank”>GIZ-Uganda</a> and created by <a href="http://geogecko.com" target=”_blank”>GeoGecko</a>';
+
+			var layerOSM = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+				attribution: [attr_osm, attr_nests, attr_dev].join(', ')
+			});
+
+			storkmap.map = L.map('map', {
+				attributionControl: false,
+				layers: [layerOSM],
+				zoomControl: false,
+				minZoom: 6
+			});
+
+
+
+
+//			L.control.attribution({position: 'bottomleft'}).addTo(storkmap.map);
+//			storkmap.currentTag = "water_point";
+			
+			L.control.tagFilterButton({
+				data: ['HC II', 'Hospital','HC III'],
+				filterOnEveryClick: true,
+				icon: '<img src="./css_/images/filter-solid.svg">',
+			}).addTo(storkmap.map);
+			
+			L.control.tagFilterButton({
+				data: ['Private', 'Government Aided','Non- Government Funded'],
+				filterOnEveryClick: true,
+				icon: '<img src="./css_/images/filter-solid.svg">',
+			}).addTo(storkmap.map);
+			
+			L.control.tagFilterButton({
+				data: ['Policepost','PoliceStation'],
+				filterOnEveryClick: true,
+				icon: '<img src="./css_/images/filter-solid.svg">',
+			}).addTo(storkmap.map);
+			
+
+			storkmap.markerClusterGroup = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Borehole clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+			
+			storkmap.markerClusterGroup1 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Water_Tap clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+
+			storkmap.markerClusterGroup2 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Water_Tank clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+			
+			storkmap.markerClusterGroup3 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Protected_Spring clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+			storkmap.markerClusterGroup5 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Rain_Water clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+			storkmap.markerClusterGroup6 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Well clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+			storkmap.markerClusterGroup11 = L.markerClusterGroup({
+				iconCreateFunction: function(cluster) {
+					var childCount = cluster.getChildCount();
+					return L.divIcon({className: 'Other clusterIcons', html: '<div><span>' + childCount + '</span></div>'});
+				},
+				polygonOptions: {
+					opacity: 0,
+					fillOpacity: 0
+				}
+			});
+
+			storkmap.osmJson = {};
+			makeMap();
+
+
+		</script>
+	</body>
+
+</html>
